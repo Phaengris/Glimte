@@ -1,3 +1,2 @@
 # Glimte
-
-# https://saveriomiroddi.github.io/Installing-ruby-tk-bindings-gem-on-ubuntu/
+MVVM framework based on Glimmer for creating desktop apps
