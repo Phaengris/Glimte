@@ -1,9 +1,9 @@
 # TODO: any ready-to-use gem for that?
 
-module Glimte::Utils::Callable
-  extend ActiveSupport::Concern
+module Glimte::Util::Callable
 
-  included do |base|
+  def self.included(base)
+    base.extend ClassMethods
     base.class_eval do
       class << self
         private_class_method :new
@@ -11,7 +11,7 @@ module Glimte::Utils::Callable
     end
   end
 
-  class_methods do
+  module ClassMethods
     def call(*args)
       self.new(*args).call
     end

@@ -1,4 +1,4 @@
-class Glimte::Utils::Sequence
+class Glimte::Util::Sequence
 
   def initialize(&block)
     @index = nil
@@ -15,7 +15,7 @@ class Glimte::Utils::Sequence
     yield self.next
   end
 
-  def count
+  def current
     @index || 0
   end
 

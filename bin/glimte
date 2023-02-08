@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+
+require 'bundler/setup'
+require 'cri'
+
+commands_path =
+  File.expand_path(
+    File.dirname(__FILE__) + '/../lib/glimte/dev/commands/'
+  )
+
+cmd = Cri::Command.load_file("#{commands_path}/glimte.rb")
+
+cmd.add_command Cri::Command.load_file("#{commands_path}/console.rb")
+cmd.add_command Cri::Command.load_file("#{commands_path}/run.rb")
+
+# TODO: `new` command for creating a new Glimte project
+# TODO: `package` command for creating a distributable package
+
+cmd.run(ARGV)

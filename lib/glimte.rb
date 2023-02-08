@@ -1,36 +1,48 @@
-# TODO: why it isn't requested by Glimmer itself? am I missing something?
-require 'concurrent'
+require "zeitwerk"
+loader = Zeitwerk::Loader.for_gem
+loader.ignore("#{__dir__}/glimmer")
+loader.ignore("#{__dir__}/dev/commands")
+loader.setup
 
 require 'glimmer'
 require 'glimmer-dsl-tk'
 
-# TODO: well, should we get rid of ActiveSupport?
-require 'active_support/core_ext/object/blank'
-require 'active_support/core_ext/object/inclusion'
-require 'active_support/core_ext/enumerable'
-require 'active_support/core_ext/module/attr_internal'
-require 'active_support/core_ext/module/delegation'
-require 'active_support/concern'
+require 'singleton'
+require 'facets/kernel/present'
 
-module Glimte
-  def self.run(**boot_args)
-    boot(**boot_args)
-    Views.MainWindow.open
+class Glimte
+  include Singleton
+
+  class AlreadyRunning < StandardError; end
+  class AlreadyBooted < StandardError; end
+
+  class << self
+    def_delegator :run, :instance
   end
 
-  def self.boot(root_path: nil)
-    root_path ||= begin
-                    match = caller[1].match /^(.*):[0-9]+:in \`/
-                    raise "Failed to detect application root path. Try to use `root_path` parameter to specify it." unless match
-                    File.dirname(match[1])
-                  end
-    @root = Pathname.new(root_path)
+  attr_reader :root,
+              :views
 
+  def run(**boot_args)
+    raise AlreadyRunning if running?
+
+    boot(**boot_args)
+    @views.MainWindow.open
+  end
+
+  def boot(root_path: nil)
+    raise AlreadyBooted if booted?
+
+    root_path ||= Glimte::FindRoot.call
+    raise ApplicationRootNotFound unless root_path
+
+    @root = Pathname.new(root_path)
+    @views = Glimte::Views.new
     Glimte::Boot.call
   end
 
   def self.root
-    @root.dup
+    instance.root.dup
   end
 
   def self.path(local_path)
@@ -42,6 +54,7 @@ module Glimte
   end
 
   def self.view_path(path)
+    path += '.glimmer.rb' unless path.end_with?('.glimmer.rb')
     views_path.join(path)
   end
 
@@ -53,25 +66,20 @@ module Glimte
     assets_path.join(path)
   end
 
-  def self.exit
-    # TODO: exit callbacks?
-    Views.MainWindow.destroy if Views.main_window_ready?
-    Kernel.exit
+  def self.exit(code = 0)
+    instance.views.MainWindow.destroy if instance.views.main_window_ready?
+    Kernel.exit(code)
   end
 
-  module Utils; end
-  module Dev; end
+  private
+
+  def running?
+    @views&.main_window_ready?
+  end
+
+  def booted?
+    @root.present?
+  end
 end
 
-require_relative './glimte/utils/attr'
-require_relative './glimte/utils/callable'
-
 Dir[File.expand_path(File.dirname(__FILE__) + '/glimmer/**/*.rb')].each { |f| require f }
-::Glimmer::Tk::WidgetProxy.include Glimte::Utils::Attr
-
-# TODO: should we move it under Glimte:: namespace?
-require_relative './views'
-require_relative './view_models'
-
-# TODO: make all internal functionality classes private?
-Dir[File.expand_path(File.dirname(__FILE__) + '/glimte/**/*.rb')].each { |f| require f }

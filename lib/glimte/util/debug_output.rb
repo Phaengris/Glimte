@@ -1,10 +1,12 @@
-require 'pastel'
+require 'dry-initializer'
+# require 'pastel'
 
-class Glimte::Utils::DebugOutput
-  include Glimte::Utils::Attr
-  include Glimte::Utils::Callable
+class Glimte::Util::DebugOutput
+  extend Dry::Initializer
+  include Glimte::Util::Callable
 
-  init_with_attributes :msg, :data
+  param :message_or_data
+  param :data
 
   def call
 

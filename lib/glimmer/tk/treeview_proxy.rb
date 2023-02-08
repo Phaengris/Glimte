@@ -79,7 +79,7 @@ module Glimmer_Tk_TreeviewProxy_Override
   end
 
   def select_prev
-    # TODO: better exception class?
+    # TODO: named exception?
     raise "Works only for single item selection mode" unless selectmode == 'browse'
 
     sel = tk.selection.first

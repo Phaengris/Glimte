@@ -1,23 +1,27 @@
+require 'dry-initializer'
+require 'forwardable'
 require_relative './view_helpers'
 
 class Glimte::RenderView
-  include Glimte::Utils::Attr
-  include Glimte::Utils::Callable
+  extend Dry::Initializer
+  extend Forwardable
   include Glimmer
+  include Glimte::Util::Callable
   include Glimte::ViewHelpers
 
-  delegate :raise_event, :action, :cancel, :close_window, to: :_container
+  param :_container
+  param :_view_path
+  param :_view_model_instance
+  param :_body_block
 
-  init_with_attributes :_container,
-                       :_view_path,
-                       :_view_model_instance,
-                       :_body_block
+  def_delegators :_container,
+                 :raise_event, :action, :cancel, :close_window
 
   def call
-    instance_attr_reader :view_model, _view_model_instance
-    instance_attr_reader File.basename(_view_path), _view_model_instance
-    instance_attr_reader :view, _container
-    instance_attr_reader :widget, _container
+    define_singleton_method :view_model do; _view_model_instance; end
+    define_singleton_method File.basename(_view_path).to_sym do; _view_model_instance; end
+    define_singleton_method :view do; _container; end
+    define_singleton_method :widget do; _container; end
 
     Dir.glob(Glimte.path('app/views')
                    .join("#{_view_path}_components/_*.glimmer.rb")).each do |component_abs_path|
@@ -31,7 +35,6 @@ class Glimte::RenderView
       _view_abs_path = Glimte.path("app/views").join("#{_view_path}.glimmer.rb")
       _container.content do
         instance_eval(File.read(_view_abs_path))
-        # instance_exec(&_body_block) if _body_block
         _body_block.call if _body_block
       end
 
@@ -53,8 +56,8 @@ class Glimte::RenderView
       e.backtrace.each { |line| puts "  #{line}" }
       raise ErrorInTemplate.new(error_message, _container)
     else
-      # TODO: print this if development mode?
-      # puts "Rendered #{_view_abs_path}"
+      # TODO: add some colorization
+      puts "Rendered #{_view_abs_path}" if Glimte::Dev::Runner.instance.running?
     end
   end
 
@@ -67,4 +70,8 @@ class Glimte::RenderView
     end
   end
 
+end
+
+class Glimte
+  private_constant :RenderView
 end

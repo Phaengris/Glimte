@@ -1,15 +1,12 @@
 require 'ostruct'
 
-class Glimte::ViewModelErrors < OpenStruct
-  attr_internal_accessor :keys
-
+class Glimte::Model::Errors < OpenStruct
   def initialize(keys)
-    keys = Array(keys).map(&:to_sym)
+    @keys = Array(keys).map(&:to_sym)
 
     if (forbidden_keys = keys & self.class.instance_methods(false)).any?
       raise ArgumentError, <<-MSG.squish.strip
-          Can't use #{forbidden_keys.map { |key| "\"#{key}\"" }
-                                    .to_sentence(two_words_connector: 'or', last_word_connector: 'or')}
+          Can't use #{forbidden_keys.map { |key| "\"#{key}\"" }.conjoin(', ', last: ' or ')}
           as #{forbidden_keys.one? ? 'a key' : 'keys'}
       MSG
     end

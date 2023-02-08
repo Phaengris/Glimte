@@ -1,20 +1,28 @@
-class Glimte::ViewsSelector
-  include Glimte::Utils::Attr
+require 'dry-initializer'
 
-  init_with_attributes :path
+class Glimte::ViewsSelector
+  extend Dry::Initializer
+
+  param :path
+
+  private
 
   def method_missing(name, *args, &block)
-    next_path = path ? Pathname.new(path).join(name.to_s) : Pathname.new(name.to_s)
+    next_path = path ? path.join(name.to_s) : Pathname.new(name.to_s)
 
-    if File.exist?(Glimte.path("app/views/#{next_path}.glimmer.rb"))
+    if File.exist?(Glimte.view_path("#{next_path}.glimmer.rb"))
       return Glimte::CreateView.call(next_path, args, block)
     end
 
-    if Dir.exist?(Glimte.path("app/views/#{next_path}"))
+    if Dir.exist?(Glimte.view_path(next_path))
       return self.class.new(next_path)
     end
 
     super
   end
 
+end
+
+class Glimte
+  private_constant :ViewsSelector
 end

@@ -1,14 +1,19 @@
+require 'concurrent/array'
+require 'dry-initializer'
+require 'facets/string/modulize'
 require 'singleton'
 
 class Glimte::CreateView
-  include Glimte::Utils::Attr
-  include Glimte::Utils::Callable
+  extend Dry::Initializer
+  include Glimte::Util::Callable
 
   class RecursiveViewCall < StandardError; end
 
   class TemplateNotFound < StandardError; end
 
-  init_with_attributes :view_path, :args, :block
+  param :view_path
+  param :args
+  param :block
 
   def call
     # TODO: it may cause false alarms if called from different threads. Better solution?
@@ -18,14 +23,14 @@ class Glimte::CreateView
     end
     ViewsBacktrace.instance.push(view_path)
 
-    view_abs_path = Glimte.path('app/views').join("#{view_path}.glimmer.rb")
+    view_abs_path = Glimte.view_path(view_path)
     raise TemplateNotFound, "Can't find template #{view_abs_path}" unless File.exist?(view_abs_path)
 
-    view_model_abs_path = Glimte.path('app/views').join("#{view_path}.rb")
+    view_model_abs_path = Glimte.path('app/views').join("#{view_path}_model.rb")
     view_model_instance =
       if File.exist?(view_model_abs_path)
-        view_model_class_name = 'ViewModels::' + view_path.to_s.split('/').map { |n| n.camelcase(:upper) }.join('::')
-        view_model_class_name.safe_constantize&.new
+        view_model_class_name = view_path.to_s.split('/').map(&:modulize).join('::') + 'Model'
+        Object.const_get(view_model_class_name).new
       end
 
     container = CreateContainer.call(_container_type: container_type,
@@ -37,18 +42,18 @@ class Glimte::CreateView
       Glimte::RenderView.call(_container: container,
                               _view_path: view_path,
                               _view_model_instance: view_model_instance,
-                              _body_block: (Glimte::Dev::Scene.scenario_for(view_path) if Glimte::Dev::Scene.watched?))
+                              _body_block: (Glimte::Dev::Runner.instance.scenario_for(view_path) if Glimte::Dev::Runner.instance.running?))
     rescue Glimte::RenderView::ErrorInTemplate => e
-      if Glimte::Dev::Scene.watched?
+      if Glimte::Dev::Runner.instance.running?
         ViewsBacktrace.instance.clear
-        Glimte::Dev::Scene.show_render_error(e)
+        Glimte::Dev::Runner.instance.show_render_error(e)
       else
-        # TODO: Framework.exit(by_exception: e)
+        # TODO: Glimte.exit ?
         raise
       end
     else
       ViewsBacktrace.instance.pop
-      Glimte::Dev::Scene.patch_glimmer_container(container) if Glimte::Dev::Scene.watched?
+      Glimte::Dev::Runner.instance.patch_glimmer_container(container) if Glimte::Dev::Runner.instance.running?
     end
     container
   end
@@ -71,11 +76,7 @@ class Glimte::CreateView
     view_path.to_s.end_with?('_window')
   end
 
-  # def component_name
-  #   view_path.split('/').map { |part| part.camelcase(true) }.join('/')
-  # end
-
-  class ViewsBacktrace < Array
+  class ViewsBacktrace < Concurrent::Array
     include Singleton
 
     def from_main_window?
@@ -84,11 +85,14 @@ class Glimte::CreateView
   end
 
   class CreateContainer
+    extend Dry::Initializer
     include Glimmer
-    include Glimte::Utils::Attr
-    include Glimte::Utils::Callable
+    include Glimte::Util::Callable
 
-    init_with_attributes :_container_type, :_view_path, :_view_model_instance, :_header_block
+    param :_container_type
+    param :_view_path
+    param :_view_model_instance
+    param :_header_block
 
     def call
       container = if _container_type == :toplevel && !ViewsBacktrace.instance.from_main_window?
@@ -106,7 +110,9 @@ class Glimte::CreateView
       container.content(&_header_block) if _header_block
       container
     end
-
   end
+end
 
+class Glimte
+  private_constant :CreateView
 end

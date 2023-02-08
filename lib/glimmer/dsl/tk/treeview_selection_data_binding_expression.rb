@@ -22,7 +22,6 @@
 require 'glimmer/dsl/expression'
 require 'glimmer/data_binding/model_binding'
 require 'glimmer/data_binding/tk/widget_binding'
-# require 'glimmer/data_binding/tk/list_selection_binding'
 require_relative './../../data_binding/tk/treeview_selection_binding'
 
 module Glimmer
