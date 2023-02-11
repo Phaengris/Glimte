@@ -1,4 +1,4 @@
-class Glimte::Util::Sequence
+class Glimte::Utils::Sequence
 
   def initialize(&block)
     @index = nil

@@ -7,7 +7,8 @@ class Glimte::Views
                        unless File.file?(Glimte.view_path('main_window'))
                          raise MainWindowTemplateNotFoundError, "#{Glimte.view_path('main_window')} must exist"
                        end
-                       Glimte::CreateView.call(Pathname.new('main_window'))
+                       # TODO: why can't it refer to private subclasses from inside itself?
+                       Glimte.const_get('CreateView').call(Pathname.new('main_window'))
                      end
     @main_window
   end
@@ -23,7 +24,8 @@ class Glimte::Views
   private
 
   def method_missing(name, *args, &block)
-    Glimte::ViewsSelector.new.send(name, *args, &block)
+    # TODO: why can't it refer to private subclasses from inside itself?
+    ::Glimte.const_get('ViewsSelector').new.send(name, *args, &block)
   end
 end
 

@@ -1,5 +1,5 @@
 class Glimte::FindRoot
-  include Glimte::Util::Callable
+  include Glimte::Utils::Callable
 
   def call
     return Dir.pwd if glimte_dir?(Dir.pwd)

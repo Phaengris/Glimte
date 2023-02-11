@@ -1,6 +1,6 @@
 # TODO: any ready-to-use gem for that?
 
-module Glimte::Util::Callable
+module Glimte::Utils::Callable
 
   def self.included(base)
     base.extend ClassMethods
@@ -12,8 +12,14 @@ module Glimte::Util::Callable
   end
 
   module ClassMethods
-    def call(*args)
-      self.new(*args).call
+    def call(*args, **more_args)
+      if args.present?
+        self.new(*args).call
+      elsif more_args.present?
+        self.new(**more_args).call
+      else
+        self.new.call
+      end
     end
   end
 

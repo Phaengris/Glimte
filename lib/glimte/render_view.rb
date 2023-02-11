@@ -6,13 +6,13 @@ class Glimte::RenderView
   extend Dry::Initializer
   extend Forwardable
   include Glimmer
-  include Glimte::Util::Callable
+  include Glimte::Utils::Callable
   include Glimte::ViewHelpers
 
-  param :_container
-  param :_view_path
-  param :_view_model_instance
-  param :_body_block
+  option :_container
+  option :_view_path
+  option :_view_model_instance
+  option :_body_block
 
   def_delegators :_container,
                  :raise_event, :action, :cancel, :close_window

@@ -8,7 +8,7 @@ class Glimte::ChannelsSelector
     @bus ||= Omnes::Bus.new
   end
 
-  param :path
+  param :path, default: nil, optional: true
 
   private
 

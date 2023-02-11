@@ -1,19 +1,19 @@
-require 'concurrent/array'
+require 'concurrent/array' unless Object.const_defined?('Concurrent::Array')
 require 'dry-initializer'
 require 'facets/string/modulize'
 require 'singleton'
 
 class Glimte::CreateView
   extend Dry::Initializer
-  include Glimte::Util::Callable
+  include Glimte::Utils::Callable
 
   class RecursiveViewCall < StandardError; end
 
   class TemplateNotFound < StandardError; end
 
   param :view_path
-  param :args
-  param :block
+  param :args, optional: true
+  param :block, optional: true
 
   def call
     # TODO: it may cause false alarms if called from different threads. Better solution?
@@ -29,7 +29,7 @@ class Glimte::CreateView
     view_model_abs_path = Glimte.path('app/views').join("#{view_path}_model.rb")
     view_model_instance =
       if File.exist?(view_model_abs_path)
-        view_model_class_name = view_path.to_s.split('/').map(&:modulize).join('::') + 'Model'
+        view_model_class_name = 'ViewModels::' + view_path.to_s.split('/').map(&:modulize).join('::')
         Object.const_get(view_model_class_name).new
       end
 
@@ -39,11 +39,14 @@ class Glimte::CreateView
                                      _header_block: block)
 
     begin
-      Glimte::RenderView.call(_container: container,
-                              _view_path: view_path,
-                              _view_model_instance: view_model_instance,
-                              _body_block: (Glimte::Dev::Runner.instance.scenario_for(view_path) if Glimte::Dev::Runner.instance.running?))
-    rescue Glimte::RenderView::ErrorInTemplate => e
+      # TODO: why can't it refer to private subclasses from inside itself?
+      Glimte.const_get('RenderView').call(
+        _container: container,
+        _view_path: view_path,
+        _view_model_instance: view_model_instance,
+        _body_block: (Glimte::Dev::Runner.instance.scenario_for(view_path) if Glimte::Dev::Runner.instance.running?)
+      )
+    rescue Glimte.const_get('RenderView')::ErrorInTemplate => e
       if Glimte::Dev::Runner.instance.running?
         ViewsBacktrace.instance.clear
         Glimte::Dev::Runner.instance.show_render_error(e)
@@ -87,12 +90,12 @@ class Glimte::CreateView
   class CreateContainer
     extend Dry::Initializer
     include Glimmer
-    include Glimte::Util::Callable
+    include Glimte::Utils::Callable
 
-    param :_container_type
-    param :_view_path
-    param :_view_model_instance
-    param :_header_block
+    option :_container_type
+    option :_view_path
+    option :_view_model_instance
+    option :_header_block
 
     def call
       container = if _container_type == :toplevel && !ViewsBacktrace.instance.from_main_window?
@@ -105,8 +108,13 @@ class Glimte::CreateView
                   else
                     send(_container_type) {}
                   end
-      container.instance_attr_reader(:view_path, _view_path)
-      container.instance_attr_reader(:view_model, _view_model_instance)
+
+      # TODO: more elegant way to do this?
+      container.instance_variable_set(:@_view_path, _view_path)
+      container.define_singleton_method :view_path do; @_view_path; end
+      container.instance_variable_set(:@_view_model_instance, _view_model_instance)
+      container.define_singleton_method :view_model do; @_view_model_instance; end
+
       container.content(&_header_block) if _header_block
       container
     end

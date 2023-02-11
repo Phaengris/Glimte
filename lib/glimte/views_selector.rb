@@ -3,18 +3,19 @@ require 'dry-initializer'
 class Glimte::ViewsSelector
   extend Dry::Initializer
 
-  param :path
+  param :path, default: nil, optional: true
 
   private
 
   def method_missing(name, *args, &block)
     next_path = path ? path.join(name.to_s) : Pathname.new(name.to_s)
 
-    if File.exist?(Glimte.view_path("#{next_path}.glimmer.rb"))
-      return Glimte::CreateView.call(next_path, args, block)
+    if File.exist?(Glimte.view_path(next_path))
+      # TODO: why can't it refer to private subclasses from inside itself?
+      return Glimte.const_get('CreateView').call(next_path, args, block)
     end
 
-    if Dir.exist?(Glimte.view_path(next_path))
+    if Dir.exist?(Glimte.views_path.join(next_path))
       return self.class.new(next_path)
     end
 

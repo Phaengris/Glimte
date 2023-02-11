@@ -6,16 +6,16 @@ class Glimmer::DSL::Tk::GlimteExpressions < Glimmer::DSL::Expression
   # TODO: Draft: let's keep it simple for now, split to separate expressions later
   # TODO: some of these may be offered for Glimmer itself?
 
-  KEYWORDS = %w[Views Channels on_action on_cancel close_window].map(&:freeze).freeze
+  KEYWORDS = %w[on_action on_cancel close_window].map(&:freeze).freeze
 
   def can_interpret?(parent, keyword, *args, &block)
     # unmemoize :view_model_setter_available?
-    keyword.in?(KEYWORDS) || view_model_setter_available?(parent, keyword)
+    KEYWORDS.include?(keyword) || view_model_setter_available?(parent, keyword)
   end
 
   def interpret(parent, keyword, *args, &block)
     case
-    when keyword.in?(KEYWORDS)
+    when KEYWORDS.include?(keyword)
       parent.send(keyword, *args, &block)
     when view_model_setter_available?(parent, keyword)
       parent.view_model.send("#{keyword}=", *args)

@@ -1,6 +1,6 @@
 class Glimte::Dev::KeyCatcher
   include Glimmer
-  include Glimte::Util::Callable
+  include Glimte::Utils::Callable
 
   # TODO: use _p ?
   def call

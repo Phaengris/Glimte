@@ -7,8 +7,9 @@ loader.setup
 require 'glimmer'
 require 'glimmer-dsl-tk'
 
-require 'singleton'
 require 'facets/kernel/present'
+require 'forwardable'
+require 'singleton'
 
 class Glimte
   include Singleton
@@ -16,12 +17,13 @@ class Glimte
   class AlreadyRunning < StandardError; end
   class AlreadyBooted < StandardError; end
 
-  class << self
-    def_delegator :run, :instance
-  end
-
   attr_reader :root,
-              :views
+              :views,
+              :channels
+
+  def self.run(**boot_args)
+    instance.run(**boot_args)
+  end
 
   def run(**boot_args)
     raise AlreadyRunning if running?
@@ -33,12 +35,13 @@ class Glimte
   def boot(root_path: nil)
     raise AlreadyBooted if booted?
 
-    root_path ||= Glimte::FindRoot.call
+    root_path ||= FindRoot.call
     raise ApplicationRootNotFound unless root_path
 
     @root = Pathname.new(root_path)
-    @views = Glimte::Views.new
-    Glimte::Boot.call
+    @views = Views.new
+    @channels = ChannelsSelector.new
+    Boot.call
   end
 
   def self.root
@@ -46,7 +49,7 @@ class Glimte
   end
 
   def self.path(local_path)
-    @root.join(local_path)
+    root.join(local_path)
   end
 
   def self.views_path
@@ -54,6 +57,7 @@ class Glimte
   end
 
   def self.view_path(path)
+    path = path.to_s
     path += '.glimmer.rb' unless path.end_with?('.glimmer.rb')
     views_path.join(path)
   end
@@ -81,5 +85,7 @@ class Glimte
     @root.present?
   end
 end
+
+module ViewModels; end
 
 Dir[File.expand_path(File.dirname(__FILE__) + '/glimmer/**/*.rb')].each { |f| require f }

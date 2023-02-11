@@ -1,9 +1,9 @@
 require 'dry-initializer'
 # require 'pastel'
 
-class Glimte::Util::DebugOutput
+class Glimte::Utils::DebugOutput
   extend Dry::Initializer
-  include Glimte::Util::Callable
+  include Glimte::Utils::Callable
 
   param :message_or_data
   param :data

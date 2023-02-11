@@ -8,13 +8,13 @@ module Glimte::ViewHelpers
   memoize def rows
     raise PlacementConflict, 'Components placement is already defined as columns' if @_columns_initialized
     @_rows_initialized = true
-    Glimte::Util::Sequence.new
+    Glimte::Utils::Sequence.new
   end
 
   memoize def columns
     raise PlacementConflict, 'Components placement is already defined as rows' if @_rows_initialized
     @_columns_initialized = true
-    Glimte::Util::Sequence.new
+    Glimte::Utils::Sequence.new
   end
 
   def rows_separator(size = 15)
