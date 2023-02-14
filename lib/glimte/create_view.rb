@@ -26,7 +26,7 @@ class Glimte::CreateView
     view_abs_path = Glimte.view_path(view_path)
     raise TemplateNotFound, "Can't find template #{view_abs_path}" unless File.exist?(view_abs_path)
 
-    view_model_abs_path = Glimte.path('app/views').join("#{view_path}_model.rb")
+    view_model_abs_path = Glimte.path('app/views').join("#{view_path}.rb")
     view_model_instance =
       if File.exist?(view_model_abs_path)
         view_model_class_name = 'ViewModels::' + view_path.to_s.split('/').map(&:modulize).join('::')

@@ -15,7 +15,7 @@ class Glimte::RenderView
   option :_body_block
 
   def_delegators :_container,
-                 :raise_event, :action, :cancel, :close_window
+                 :action, :cancel, :close_window
 
   def call
     define_singleton_method :view_model do; _view_model_instance; end

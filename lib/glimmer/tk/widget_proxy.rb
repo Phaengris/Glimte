@@ -26,27 +26,27 @@ module Glimmer_Tk_WidgetProxy_Override
     super listener_name, &listener
   end
 
-  # def action
-  #   closest_view.raise_event 'Action', local: true
-  # end
+  def action
+    # closest_view.raise_event 'Action', local: true
+  end
 
-  # def cancel
-  #   closest_view.raise_event 'Cancel', local: true
-  # end
+  def cancel
+    # closest_view.raise_event 'Cancel', local: true
+  end
 
-  # def on_action(&listener)
-  #   # TODO: better exception?
-  #   raise 'This handler can be defined only on the top level of a view' unless view?
-  #
-  #   on('Action', local: true, &listener)
-  # end
+  def on_action(&listener)
+    # # TODO: better exception?
+    # raise 'This handler can be defined only on the top level of a view' unless view?
+    #
+    # on('Action', local: true, &listener)
+  end
 
-  # def on_cancel(&listener)
-  #   # TODO: better exception?
-  #   raise 'This handler can be defined only on the top level of a view' unless view?
-  #
-  #   on('Cancel', local: true, &listener)
-  # end
+  def on_cancel(&listener)
+    # # TODO: better exception?
+    # raise 'This handler can be defined only on the top level of a view' unless view?
+    #
+    # on('Cancel', local: true, &listener)
+  end
 
   def grid(options = {})
     index_in_parent = griddable_parent_proxy&.children&.index(griddable_proxy)

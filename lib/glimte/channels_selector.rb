@@ -17,12 +17,12 @@ class Glimte::ChannelsSelector
     event_name = next_path.to_s.to_sym
 
     if block_given?
-      self.class.bus.register(event_name) unless self.class.bus.registered?(event_name)
+      self.class.bus.register(event_name) unless self.class.bus.registry.registered?(event_name)
       self.class.bus.subscribe(event_name, &block)
       return
     end
 
-    if self.class.bus.registered?(event_name)
+    if self.class.bus.registry.registered?(event_name)
       self.class.bus.publish(event_name, *args)
     end
 

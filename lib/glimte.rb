@@ -89,3 +89,4 @@ end
 module ViewModels; end
 
 Dir[File.expand_path(File.dirname(__FILE__) + '/glimmer/**/*.rb')].each { |f| require f }
+require_relative './glimte/utils/debug_output'
