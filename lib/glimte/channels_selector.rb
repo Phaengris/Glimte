@@ -1,6 +1,47 @@
 require 'dry-initializer'
 require 'omnes/bus'
 
+=begin
+# Define channels
+
+Channels.flash_message.success do |event|
+  ...
+end
+Channels.flash_message.alert do |event|
+  ...
+end
+
+TODO: or / and?
+Channels.flash_message do |channel|
+  channel.success do |event|
+    ...
+  end
+  channel.alert do |event|
+    ...
+  end
+end
+
+# Sending request / event through a channel
+
+Channels.flash_message.success message: '...'
+
+# Difference between a channel request and a channel event is semantic
+
+Channels.search_string.update do |event|
+  # a request
+  search_string.text = event[:value]
+end
+
+Channels.search_string.update 'new value'
+
+Channels.search_string.updated do |event|
+  # an event
+  puts "Search string value is now #{event.payload[:value]}"
+end
+
+Channels.search_string.updated 'new value'
+=end
+
 class Glimte::ChannelsSelector
   extend Dry::Initializer
 
@@ -23,7 +64,8 @@ class Glimte::ChannelsSelector
     end
 
     if self.class.bus.registry.registered?(event_name)
-      self.class.bus.publish(event_name, *args)
+      args = args.first if args.is_a?(Array) && args.one?
+      self.class.bus.publish(event_name, **args)
     end
 
     self.class.new(next_path)

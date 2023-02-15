@@ -1,6 +1,8 @@
 require 'dry-initializer'
 require 'facets/kernel/present'
+require 'facets/string/squish'
 require 'memoized'
+require 'pp'
 
 class Glimte::Utils::DebugOutput
   extend Dry::Initializer
@@ -8,23 +10,23 @@ class Glimte::Utils::DebugOutput
   include Memoized
 
   option :source
-  option :message_or_data
+  option :message
   option :data
-  attr_accessor :message
 
   module ClassMethods
     def _gli(message_or_data, data = nil)
-      Glimte::Utils::DebugOutput.call(source: self, message_or_data: message_or_data, data: data)
+      if message_or_data.is_a?(Hash)
+        data = message_or_data
+        message = nil
+      else
+        message = message_or_data
+      end
+
+      Glimte::Utils::DebugOutput.call(source: self, message: message, data: data)
     end
   end
 
   def call
-    if message_or_data.is_a?(Hash)
-      self.message = nil
-      self.data = message_or_data
-    else
-      self.message = message_or_data
-    end
 =begin
 DEBUG
   main_window_components.accounts_list->MyClass#my_method:99
@@ -56,7 +58,7 @@ DEBUG
              )
            else
              i = Kernel.caller.find_index { |s| s.include?(__FILE__) && s.include?('_gli') }
-             Glimte::Pastel.h2(Kernel.caller[i + 1])
+             Glimte::Pastel.h2(Kernel.caller[i + 1].delete_prefix(Glimte.root.to_s + '/'))
            end
   end
 
@@ -66,8 +68,8 @@ DEBUG
     view_path = case
                 when source.is_a?(Glimmer::Tk::WidgetProxy)
                   source.closest_view.view_path
-                when Glimmer::DSL::Engine.parent_stack.any?
-                  Glimmer::DSL::Engine.parent_stack.last.closest_view.view_path
+                # when Glimmer::DSL::Engine.parent_stack.any?
+                #   Glimmer::DSL::Engine.parent_stack.last.closest_view.view_path
                 else
                   return
                 end
@@ -86,7 +88,7 @@ DEBUG
     if data.present?
       indent = data.keys.map(&:length).max + 4
       data.map { |k, v|
-        v = v.inspect
+        v = v.pretty_inspect.squish.strip
         v = v[0..150] + '...' + v[-1] if v.length > 150
         ' ' * (indent - k.length) + Glimte::Pastel.data_key("#{k}:") + ' ' + Glimte::Pastel.data_value(v)
       }.join("\n")

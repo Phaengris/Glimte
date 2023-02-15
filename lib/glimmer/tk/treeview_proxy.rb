@@ -25,7 +25,11 @@ module Glimmer_Tk_TreeviewProxy_Override
             build_items_tree_up(@tk.selection)
           }},
           setter: {name: 'selection=', invoker: lambda { |widget, args|
-            @tk.selection_set(find_tk_elements_for_items(@tk.root, args.first))
+            if args.first
+              @tk.selection_set(find_tk_elements_for_items(@tk.root, args.first))
+            else
+              @tk.selection_set([])
+            end
           }},
         },
 

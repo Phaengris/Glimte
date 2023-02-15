@@ -1,5 +1,7 @@
 module Glimmer_Tk_WidgetProxy_Override
   def view?
+    # TODO: use some flag-like, not data-specific marker? like respond_to?(:glimte?) && glimte?
+    # TODO: or just extend all Glimmer WidgetProxies with some kind of `glimte?` method?
     respond_to?(:view_path)
   end
 
@@ -27,25 +29,41 @@ module Glimmer_Tk_WidgetProxy_Override
   end
 
   def action
-    # closest_view.raise_event 'Action', local: true
+    unless _bus.registry.registered?(:action)
+      # TODO: show a warning? raise an error?
+      return
+    end
+
+    closest_view._bus.publish :action
   end
 
   def cancel
-    # closest_view.raise_event 'Cancel', local: true
+    unless _bus.registry.registered?(:cancel)
+      # TODO: show a warning? raise an error?
+      return
+    end
+
+    closest_view._bus.publish :cancel
   end
 
   def on_action(&listener)
-    # # TODO: better exception?
+    # TODO: better exception?
     # raise 'This handler can be defined only on the top level of a view' unless view?
-    #
-    # on('Action', local: true, &listener)
+    unless _bus.registry.registered?(:action)
+      _bus.register :action
+    end
+
+    closest_view._bus.subscribe :action, &listener
   end
 
   def on_cancel(&listener)
-    # # TODO: better exception?
+    # TODO: better exception?
     # raise 'This handler can be defined only on the top level of a view' unless view?
-    #
-    # on('Cancel', local: true, &listener)
+    unless _bus.registry.registered?(:cancel)
+      _bus.register :cancel
+    end
+
+    closest_view._bus.subscribe :cancel, &listener
   end
 
   def grid(options = {})
@@ -146,6 +164,14 @@ module Glimmer_Tk_WidgetProxy_Override
 
   def close_window
     closest_window.destroy
+  end
+
+  # TODO: it may become a public functionality in the future, so developers can work with local view events
+  def _bus
+    # TODO: better exception?
+    raise 'This is only for Glimte views' unless view?
+
+    @bus ||= Omnes::Bus.new
   end
 
   private
