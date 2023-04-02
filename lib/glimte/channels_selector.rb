@@ -1,4 +1,5 @@
 require 'dry-initializer'
+require 'facets/kernel/blank'
 require 'omnes/bus'
 
 =begin
@@ -63,9 +64,18 @@ class Glimte::ChannelsSelector
       return
     end
 
+    _gli path: next_path, args: args
     if self.class.bus.registry.registered?(event_name)
-      args = args.first if args.is_a?(Array) && args.one?
-      self.class.bus.publish(event_name, **args)
+      case
+      when args.blank?
+        self.class.bus.publish(event_name)
+      when args.is_a?(Hash)
+        self.class.bus.publish(event_name, **args)
+      when args.is_a?(Array) && args.one? && args.first.is_a?(Hash)
+        self.class.bus.publish(event_name, **args.first)
+      else
+        self.class.bus.publish(event_name, data: args)
+      end
     end
 
     self.class.new(next_path)

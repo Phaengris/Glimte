@@ -1,4 +1,4 @@
-require 'concurrent/array' unless Object.const_defined?('Concurrent::Array')
+require 'concurrent/array'
 require 'dry-initializer'
 require 'facets/string/modulize'
 require 'singleton'

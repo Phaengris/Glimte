@@ -4,12 +4,14 @@ loader.ignore("#{__dir__}/glimmer")
 loader.ignore("#{__dir__}/dev/commands")
 loader.setup
 
+# 'concurrent' must be required before 'glimmer'
+# https://github.com/AndyObtiva/glimmer/blob/v2.7.3/lib/glimmer/shim/concurrent.rb
+require 'concurrent'
 require 'glimmer'
 require 'glimmer-dsl-tk'
-
-require 'facets/kernel/present'
-require 'forwardable'
 require 'singleton'
+require 'forwardable'
+require 'facets/kernel/present'
 
 class Glimte
   include Singleton
@@ -74,8 +76,6 @@ class Glimte
     instance.views.MainWindow.destroy if instance.views.main_window_ready?
     Kernel.exit(code)
   end
-
-  private
 
   def running?
     @views&.main_window_ready?

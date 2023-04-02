@@ -16,25 +16,37 @@ class Glimte::Dev::Runner
   end
   class AlreadyRunning < StandardError; end
 
-  def run(scenario_path: nil)
+  def run(scenario: nil)
     # TODO: named error?
     raise AlreadyRunning if running? || Glimte.instance.running?
     @running = true
 
+    Glimte.instance.boot
+
     @scenario_path = nil
     @scenario_abs_path = nil
+    @scenario_content = nil
     @view_scenarios = nil
     @app_files_listener = nil
     @app_files_changed = nil
 
-    if scenario_path
-      @scenario_path = scenario_path.delete_suffix('.rb')
-      @scenario_abs_path = Glimte.path('dev/scenarios').join("#{@scenario_path}.rb")
-      # TODO: named error?
-      raise "Can't find scenario file #{@scenario_abs_path}" unless File.file?(@scenario_abs_path)
+    if scenario
+      @scenario_path = scenario.delete_suffix('.rb')
+      @scenario_abs_path = Glimte.path('dev/scenarios').join("#{@scenario}.rb")
+      if File.exists?(@scenario_abs_path)
+        unless File.file?(@scenario_abs_path)
+          raise "Scenario specified as path #{@scenario_abs_path}, but it is not a file" unless File.file?(@scenario_abs_path)
+        end
+      else
+        puts "Scenario is not a file, executing it as a main window scenario..."
+        @scenario_path = @scenario_abs_path = nil
+        @scenario_content = <<-SCN
+          scenario_for("main_window") do
+            #{scenario}
+          end
+        SCN
+      end
     end
-
-    Glimte.boot
 
     reload_app
   end
@@ -50,11 +62,15 @@ class Glimte::Dev::Runner
 
       @view_scenarios = ScenarioEvaluator
                           .new(_scenario_content: File.read(@scenario_abs_path))
-                          .instance_variable_get(:@_view_scenarios)
+                          .instance_variable_get(:@_scenarios)
       if @view_scenarios.blank?
         # TODO: add some colorization
         puts "Warning: No view scenarios found in #{@scenario_abs_path}. Use `scenario_for` to add scenarios for views."
       end
+    elsif @scenario_content
+      @view_scenarios = ScenarioEvaluator
+                          .new(_scenario_content: @scenario_content)
+                          .instance_variable_get(:@_scenarios)
     else
       @view_scenarios = {}
     end
@@ -187,11 +203,13 @@ class Glimte::Dev::Runner
     view_model_instance = ViewModels::MainWindow.new if File.exist?(view_model_path)
 
     begin
-      Glimte::RenderView.call(_container: Views.MainWindow,
+      # TODO: well, I'm starting to think if it's really worth it to make them private
+      # TODO: if we have to call them through `const_get` anyway
+      Glimte.const_get('RenderView').call(_container: Views.MainWindow,
                               _view_path: 'main_window',
                               _view_model_instance: view_model_instance,
                               _body_block: scenario_for('main_window'))
-    rescue Glimte::RenderView::ErrorInTemplate => e
+    rescue Glimte.const_get('RenderView')::ErrorInTemplate => e
       show_render_error(e)
     else
       patch_glimmer_container(Views.MainWindow)
@@ -202,14 +220,17 @@ class Glimte::Dev::Runner
     include Glimmer
 
     def initialize(_scenario_content:)
-      @_view_scenarios = {}
+      @_scenarios = {}
 
       instance_eval(_scenario_content)
     end
 
+    # TODO: allow both "." and "/" separators
+    # TODO: allow strings, symbols and Pathname
+    # TODO: convert to Pathname, so Runner#scenario_for won't need to convert it's argument to string
     def scenario_for(view_path, &block)
       @_scenarios[view_path] ||= proc {}
-      @_scenarios[view_path] << block
+      @_scenarios[view_path] = block << @_scenarios[view_path]
     end
   end
 

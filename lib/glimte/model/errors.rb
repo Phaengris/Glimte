@@ -1,23 +1,22 @@
 require 'ostruct'
+require 'facets/array/conjoin'
 
 class Glimte::Model::Errors < OpenStruct
   def initialize(keys)
     @keys = Array(keys).map(&:to_sym)
 
-    if (forbidden_keys = keys & self.class.instance_methods(false)).any?
+    if (forbidden_keys = @keys & self.class.instance_methods(false)).any?
       raise ArgumentError, <<-MSG.squish.strip
           Can't use #{forbidden_keys.map { |key| "\"#{key}\"" }.conjoin(', ', last: ' or ')}
           as #{forbidden_keys.one? ? 'a key' : 'keys'}
       MSG
     end
 
-    self.keys = keys
-
-    super keys.map { |key| [key, nil] }.to_h
+    super @keys.map { |key| [key, nil] }.to_h
   end
 
   def any?
-    self.keys.each { |key| return true if self.send(key).present? }
+    @keys.each { |key| return true if self.send(key).present? }
     false
   end
 
@@ -27,6 +26,6 @@ class Glimte::Model::Errors < OpenStruct
 
   def call_contract(contract_class, values_to_validate)
     contract_errors = contract_class.new.call(values_to_validate).errors.to_h
-    self.keys.each { |key| self.send("#{key}=", contract_errors[key]&.to_sentence&.capitalize) }
+    @keys.each { |key| self.send("#{key}=", contract_errors[key]&.conjoin(', ', last: ' and ')&.capitalize) }
   end
 end
