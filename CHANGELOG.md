@@ -6,7 +6,8 @@
 - Introduced Channels
 
 ### Changed
-- More detailed README
+- README heavily updated
+- Old CLIs `dev/console`, `dev/watch_scene` replaced with the new united `glimte` CLI
 
 ### Removed
 - Redirecting Tk events
