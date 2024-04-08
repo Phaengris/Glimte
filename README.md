@@ -1,6 +1,8 @@
 Glimte is an Ruby MVVM framework based on [Glimmer](https://github.com/AndyObtiva/glimmer)
 for developing desktop applications with [Tk](https://tkdocs.com/).
 
+**Unfortunately I'm overloaded and have no time to work on / support the project now. Feel free to fork it if you're interested. It may be resumed in the future but really can't promise atm.**
+
 <!-- TOC -->
 * [Why Tk?](#why-tk)
 * [Pre-requisites](#pre-requisites)
